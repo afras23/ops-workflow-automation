@@ -37,7 +37,6 @@ Built as a demo package for “automation with guardrails” rather than a toy s
 
 ## Architecture
 
-```mermaid
 flowchart LR
   A[Inbox webhook JSON] --> B[POST /ingest]
   B --> C[Extractor and validation]
