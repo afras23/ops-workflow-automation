@@ -39,21 +39,21 @@ Built as a demo package for “automation with guardrails” rather than a toy s
 
 ```mermaid
 flowchart LR
-  A[Inbox webhook JSON] --> B[POST /ingest]
-  B --> C[Extractor and validation]
-  C --> D{Confidence meets threshold?}
+  A["Inbox webhook JSON"] --> B["POST /ingest"]
+  B --> C["Extractor + validation"]
+  C --> D{"Confidence meets threshold?"}
 
-  D -- No --> E[Pending review queue]
-  E --> F[POST /items/{id}/review]
+  D -- "No" --> E["Pending review queue"]
+  E --> F["POST /items/<item_id>/review"]
 
-  D -- Yes --> G[Auto-approved]
+  D -- "Yes" --> G["Auto-approved"]
 
-  F --> H[Write to destinations]
+  F --> H["Write to destinations"]
   G --> H
 
-  H --> I[Slack summary (PII redacted)]
+  H --> I["Slack summary (PII redacted)"]
 
-  C --> J[(SQLite items and audit log)]
+  C --> J["SQLite items + audit log"]
   F --> J
   G --> J
   H --> J
