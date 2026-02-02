@@ -39,17 +39,23 @@ Built as a demo package for “automation with guardrails” rather than a toy s
 
 ```mermaid
 flowchart LR
-  A[Inbox Webhook JSON] --> B[/POST /ingest/]
-  B --> C[Extractor + Validation<br/>Pydantic + JSON Schema]
-  C --> D{Confidence >= Threshold?}
-  D -- No --> E[Pending Review Queue]
-  E --> F[/POST /items/:id/review/]
-  D -- Yes --> G[Auto-Approved]
-  F --> H[Write to Destinations<br/>CSV + JSONL mocks]
+  A[Inbox webhook JSON] --> B[POST /ingest]
+  B --> C[Extractor and validation]
+  C --> D{Confidence meets threshold?}
+
+  D -- No --> E[Pending review queue]
+  E --> F[POST /items/{id}/review]
+
+  D -- Yes --> G[Auto-approved]
+
+  F --> H[Write to destinations]
   G --> H
-  H --> I[Slack Summary<br/>(PII Redacted)]
-  C --> J[(SQLite Items + Audit Log)]
+
+  H --> I[Slack summary (PII redacted)]
+
+  C --> J[(SQLite items and audit log)]
   F --> J
   G --> J
   H --> J
   I --> J
+
