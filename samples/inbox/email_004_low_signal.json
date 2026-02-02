@@ -1,0 +1,8 @@
+{
+    "message_id": "msg_004",
+    "from": { "name": "Unknown", "email": "unknown@example.net" },
+    "subject": "Quick question",
+    "received_at": "2026-01-23T12:45:00Z",
+    "body": "Hey,\n\nCan someone help with this?\n\nThanks"
+  }
+  

@@ -1,0 +1,8 @@
+{
+    "message_id": "msg_001",
+    "from": { "name": "A. Patel", "email": "apatel@example.com" },
+    "subject": "Purchase request: laptop for new starter (needed by Feb 2)",
+    "received_at": "2026-01-23T10:21:00Z",
+    "body": "Hi Ops,\n\nPlease can we order 1 laptop for our new starter. Priority: High. Needed by 2026-02-02.\nCompany: ExampleCo.\nItem: ThinkPad T-series, Qty: 1.\n\nThanks,\nA. Patel"
+  }
+  

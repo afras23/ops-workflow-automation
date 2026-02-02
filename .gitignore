@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+.env
+data/*.db
+data/*.csv
+data/*.jsonl
+data/app.db
+data/sheet_rows.csv
+data/airtable_rows.jsonl
