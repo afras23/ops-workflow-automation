@@ -15,3 +15,29 @@ data/*.jsonl
 data/app.db
 data/sheet_rows.csv
 data/airtable_rows.jsonl
+# Local runtime outputs
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.jsonl
+*.csv
+
+# Env + secrets
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
