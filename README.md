@@ -1,6 +1,6 @@
 # Ops Workflow Automation (Email → Extraction → Sheet/CRM → Summary)
 
-A small but realistic **ops intake automation** that ingests inbox-style messages, extracts structured fields, routes low-confidence cases to a **human review queue**, writes approved items to mock destinations (Sheets/CRM), and records an **audit trail** for traceability.
+A **ops intake automation** that ingests inbox-style messages, extracts structured fields, routes low-confidence cases to a **human review queue**, writes approved items to mock destinations (Sheets/CRM), and records an **audit trail** for traceability.
 
 Built as a demo package for “automation with guardrails” rather than a toy script.
 
