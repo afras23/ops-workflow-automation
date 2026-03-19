@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file: .env
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # PostgreSQL — available for when the storage layer is migrated from SQLite.
+  # Set DATABASE_URL in .env to wire the app up to it.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-opsworkflow}
+      POSTGRES_USER: ${DB_USER:-appuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser} -d ${DB_NAME:-opsworkflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  app_data:
+  pgdata:
