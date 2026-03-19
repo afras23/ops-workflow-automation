@@ -46,6 +46,22 @@ class IngestResponse(BaseModel):
     confidence: float
     routed_to: str
 
+class AIExtractionOutput(BaseModel):
+    """Raw structured output returned by the AI provider.
+
+    Excludes computed fields (request_id, confidence) which are added
+    by ExtractionService after the AI call.
+    """
+
+    request_type: RequestType
+    priority: Priority
+    due_date: Optional[str] = None
+    company: Optional[str] = None
+    description: str
+    line_items: list[LineItem] = Field(default_factory=list)
+    extraction_notes: list[str] = Field(default_factory=list)
+
+
 class ReviewAction(BaseModel):
     reviewer: str
     action: Literal["approve", "reject"]
