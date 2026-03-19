@@ -1,36 +1,25 @@
+venv/
 .venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-.coverage
+*.egg-info/
 dist/
 build/
-*.egg-info/
-.env
-data/*.db
-data/*.csv
-data/*.jsonl
-data/app.db
-data/sheet_rows.csv
-data/airtable_rows.jsonl
-# Local runtime outputs
+
+# Runtime data
 data/
-*.db
-*.sqlite
-*.sqlite3
-*.jsonl
-*.csv
 
 # Env + secrets
 .env
-.env.*
+.env.local
 
 # OS / editor noise
 .DS_Store
 .vscode/
 .idea/
+*.swp
 
 # Python tooling
 .mypy_cache/
@@ -41,3 +30,7 @@ htmlcov/
 
 # Logs
 *.log
+logs/
+
+# Docker
+docker-compose.override.yml
