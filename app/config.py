@@ -1,27 +1,35 @@
-from dataclasses import dataclass
-import os
-from dotenv import load_dotenv
+"""Application configuration via Pydantic Settings.
 
-load_dotenv()
+Reads from environment variables and optional .env file.
+"""
 
-@dataclass(frozen=True)
-class Settings:
-    slack_webhook_url: str | None
-    confidence_threshold: float
-    sqlite_path: str
-    sheets_csv_path: str
-    airtable_jsonl_path: str
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    # Integrations
+    slack_webhook_url: str | None = None
+
+    # AI provider: "anthropic" or "mock"
+    ai_provider: str = "mock"
+    anthropic_api_key: str | None = None
+    ai_model: str = "claude-sonnet-4-6"
+
+    # Routing thresholds
+    auto_approve_threshold: float = 0.85
+    auto_reject_threshold: float = 0.50
+
+    # Storage
+    sqlite_path: str = "data/app.db"
+    sheets_csv_path: str = "data/sheet_rows.csv"
+    airtable_jsonl_path: str = "data/airtable_rows.jsonl"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
 
 def get_settings() -> Settings:
-    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL") or None
-    confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", "0.78"))
-    sqlite_path = os.getenv("SQLITE_PATH", "data/app.db")
-    sheets_csv_path = os.getenv("SHEETS_CSV_PATH", "data/sheet_rows.csv")
-    airtable_jsonl_path = os.getenv("AIRTABLE_JSONL_PATH", "data/airtable_rows.jsonl")
-    return Settings(
-        slack_webhook_url=slack_webhook_url,
-        confidence_threshold=confidence_threshold,
-        sqlite_path=sqlite_path,
-        sheets_csv_path=sheets_csv_path,
-        airtable_jsonl_path=airtable_jsonl_path,
-    )
+    return Settings()
