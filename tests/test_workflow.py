@@ -1,5 +1,3 @@
-import os
-import json
 import pytest
 from fastapi.testclient import TestClient
 
@@ -18,11 +16,11 @@ def test_ingest_idempotent(client):
         "body": "Company: Northwind Traders. Urgent. Billing portal error HTTP 500."
     }
 
-    r1 = client.post("/ingest", json=payload)
+    r1 = client.post("/api/v1/ingest", json=payload)
     assert r1.status_code == 200
     item_id_1 = r1.json()["item_id"]
 
-    r2 = client.post("/ingest", json=payload)
+    r2 = client.post("/api/v1/ingest", json=payload)
     assert r2.status_code == 200
     assert r2.json()["item_id"] == item_id_1
     assert r2.json()["routed_to"] == "idempotent_return"
@@ -36,16 +34,19 @@ def test_review_flow_reject_or_approve(client):
         "received_at": "2026-01-23T10:10:00Z",
         "body": "Hey, can you help?"
     }
-    r = client.post("/ingest", json=payload)
+    r = client.post("/api/v1/ingest", json=payload)
     assert r.status_code == 200
     item_id = r.json()["item_id"]
 
-    # Should be pending_review
-    item = client.get(f"/items/{item_id}").json()
-    assert item["status"] in ("pending_review", "approved")  # depending on threshold
+    item = client.get(f"/api/v1/items/{item_id}").json()
+    # Vague body may be auto_rejected (< 0.50), pending_review (0.50–0.85), or approved
+    assert item["status"] in ("pending_review", "approved", "rejected")
 
     if item["status"] == "pending_review":
-        rr = client.post(f"/items/{item_id}/review", json={"reviewer": "qa_user", "action": "reject", "reason": "Insufficient details"})
+        rr = client.post(
+            f"/api/v1/items/{item_id}/review",
+            json={"reviewer": "qa_user", "action": "reject", "reason": "Insufficient details"},
+        )
         assert rr.status_code == 200
-        item2 = client.get(f"/items/{item_id}").json()
+        item2 = client.get(f"/api/v1/items/{item_id}").json()
         assert item2["status"] == "rejected"
