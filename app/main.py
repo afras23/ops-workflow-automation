@@ -1,6 +1,7 @@
 """FastAPI application factory.
 
 Creates and configures the application with:
+- CorrelationIDMiddleware: UUID per request, sets contextvars, echoes header
 - Structured JSON logging (via configure_logging)
 - Lifespan context for startup/shutdown resource management
 - CORS middleware
@@ -24,6 +25,7 @@ from app.api.routes import audit, batch, health, process, review
 from app.config import get_settings
 from app.core.exceptions import BaseAppError
 from app.core.logging_config import configure_logging, correlation_id_ctx
+from app.core.middleware import CorrelationIDMiddleware
 from app.services.ai.client import CircuitBreaker, DailyCostTracker, get_ai_client
 from app.services.batch_service import BatchService
 from app.services.extraction_service import ExtractionService
@@ -54,6 +56,8 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     extraction_service = ExtractionService(ai_client=ai_client)
 
     application.state.storage = storage
+    application.state.settings = settings
+    application.state.cost_tracker = cost_tracker
     application.state.workflow_service = WorkflowService(
         storage=storage,
         settings=settings,
@@ -98,12 +102,15 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # CorrelationIDMiddleware is added last so it is outermost — it runs
+    # first on every incoming request and last on every outgoing response.
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    application.add_middleware(CorrelationIDMiddleware)
 
     @application.exception_handler(BaseAppError)
     async def app_error_handler(request: Request, exc: BaseAppError) -> JSONResponse:

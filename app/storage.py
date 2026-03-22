@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from datetime import UTC, datetime
 from typing import Any
 
 from app.utils import now_utc_iso
@@ -233,6 +234,52 @@ class Storage:
                 (item_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def metrics_snapshot(self) -> dict[str, Any]:
+        """Return a point-in-time metrics snapshot from the database.
+
+        Gathers all metrics in a single database connection to minimise
+        latency. The llm_call_log averages are 0.0 when no AI calls have
+        been recorded (mock mode or fresh database).
+
+        Returns:
+            Dict with processed_today, success_rate, avg_latency_ms,
+            avg_cost_usd, and queue_depth keys.
+        """
+        today_prefix = datetime.now(UTC).isoformat()[:10]  # "YYYY-MM-DD"
+        with self._conn() as conn:
+            processed_today: int = conn.execute(
+                "SELECT COUNT(*) FROM items WHERE created_at LIKE ?",
+                (f"{today_prefix}%",),
+            ).fetchone()[0]
+
+            approved: int = conn.execute(
+                "SELECT COUNT(*) FROM items WHERE status = 'approved'"
+            ).fetchone()[0]
+            rejected: int = conn.execute(
+                "SELECT COUNT(*) FROM items WHERE status = 'rejected'"
+            ).fetchone()[0]
+            total_decided = approved + rejected
+            success_rate = round(approved / total_decided, 4) if total_decided else 0.0
+
+            avg_latency_ms: float = (
+                conn.execute("SELECT AVG(latency_ms) FROM llm_call_log").fetchone()[0] or 0.0
+            )
+            avg_cost_usd: float = (
+                conn.execute("SELECT AVG(cost_usd) FROM llm_call_log").fetchone()[0] or 0.0
+            )
+
+            queue_depth: int = conn.execute(
+                "SELECT COUNT(*) FROM items WHERE status = 'pending_review'"
+            ).fetchone()[0]
+
+        return {
+            "processed_today": processed_today,
+            "success_rate": success_rate,
+            "avg_latency_ms": round(avg_latency_ms, 2),
+            "avg_cost_usd": round(avg_cost_usd, 6),
+            "queue_depth": queue_depth,
+        }
 
     def create_batch_job(self, job_id: str, total: int) -> None:
         """Insert a new batch job record with status=running.
