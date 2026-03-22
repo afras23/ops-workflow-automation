@@ -10,6 +10,21 @@ jobs:
   quality:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ops
+          POSTGRES_PASSWORD: ops
+          POSTGRES_DB: ops_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +37,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+          pip install psycopg2-binary
 
       - name: Lint
         run: ruff check app/ tests/
@@ -31,6 +47,11 @@ jobs:
 
       - name: Type check
         run: mypy app/ --ignore-missing-imports
+
+      - name: Run migrations against Postgres
+        env:
+          DATABASE_URL: postgresql://ops:ops@localhost:5432/ops_test
+        run: alembic upgrade head
 
       - name: Test
         env:

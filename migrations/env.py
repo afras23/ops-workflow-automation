@@ -25,9 +25,14 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Allow overriding the database URL via SQLITE_PATH env var (used in tests).
+# Allow overriding the database URL via environment variables.
+# DATABASE_URL takes precedence (used in CI against Postgres).
+# SQLITE_PATH is the fallback for local dev / tests.
+_database_url = os.environ.get("DATABASE_URL")
 _sqlite_path = os.environ.get("SQLITE_PATH")
-if _sqlite_path:
+if _database_url:
+    config.set_main_option("sqlalchemy.url", _database_url)
+elif _sqlite_path:
     config.set_main_option("sqlalchemy.url", f"sqlite:///{_sqlite_path}")
 
 
