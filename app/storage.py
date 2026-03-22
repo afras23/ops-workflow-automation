@@ -1,7 +1,8 @@
 import json
 import os
 import sqlite3
-from typing import Any, Optional
+from typing import Any
+
 from app.utils import now_utc_iso
 
 SCHEMA = """
@@ -28,6 +29,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_items_message_id ON items(message_id);
 CREATE INDEX IF NOT EXISTS idx_audit_item_id ON audit_log(item_id);
 """
 
+
 class Storage:
     def __init__(self, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -43,12 +45,12 @@ class Storage:
         with self._conn() as conn:
             conn.executescript(SCHEMA)
 
-    def get_by_message_id(self, message_id: str) -> Optional[dict[str, Any]]:
+    def get_by_message_id(self, message_id: str) -> dict[str, Any] | None:
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM items WHERE message_id = ?", (message_id,)).fetchone()
             return dict(row) if row else None
 
-    def get_item(self, item_id: str) -> Optional[dict[str, Any]]:
+    def get_item(self, item_id: str) -> dict[str, Any] | None:
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM items WHERE item_id = ?", (item_id,)).fetchone()
             return dict(row) if row else None
@@ -56,12 +58,16 @@ class Storage:
     def list_items(self, status: str | None = None) -> list[dict[str, Any]]:
         with self._conn() as conn:
             if status:
-                rows = conn.execute("SELECT * FROM items WHERE status = ? ORDER BY created_at DESC", (status,)).fetchall()
+                rows = conn.execute(
+                    "SELECT * FROM items WHERE status = ? ORDER BY created_at DESC", (status,)
+                ).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM items ORDER BY created_at DESC").fetchall()
             return [dict(r) for r in rows]
 
-    def create_item(self, item_id: str, message_id: str, status: str, confidence: float, extraction: dict) -> None:
+    def create_item(
+        self, item_id: str, message_id: str, status: str, confidence: float, extraction: dict
+    ) -> None:
         created = now_utc_iso()
         with self._conn() as conn:
             conn.execute(
@@ -72,7 +78,10 @@ class Storage:
     def update_status(self, item_id: str, status: str) -> None:
         updated = now_utc_iso()
         with self._conn() as conn:
-            conn.execute("UPDATE items SET status = ?, updated_at = ? WHERE item_id = ?", (status, updated, item_id))
+            conn.execute(
+                "UPDATE items SET status = ?, updated_at = ? WHERE item_id = ?",
+                (status, updated, item_id),
+            )
 
     def write_audit(self, item_id: str, event_type: str, actor: str, details: dict) -> None:
         created = now_utc_iso()

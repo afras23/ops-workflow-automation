@@ -1,0 +1,8 @@
+{
+    "message_id": "msg_003",
+    "from": { "name": "Sam Lee", "email": "sam.lee@example.net" },
+    "subject": "Change request: update warehouse cutoff time",
+    "received_at": "2026-01-23T12:10:00Z",
+    "body": "Ops team,\n\nCan we change the warehouse pickup cutoff time from 4pm to 3pm starting next Monday?\nPriority medium.\n\nThanks,\nSam Lee"
+  }
+  

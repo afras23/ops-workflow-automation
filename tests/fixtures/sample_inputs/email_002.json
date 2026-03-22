@@ -1,0 +1,8 @@
+{
+    "message_id": "msg_002",
+    "from": { "name": "Jordan", "email": "jordan@example.org" },
+    "subject": "Customer issue - billing portal error",
+    "received_at": "2026-01-23T11:05:00Z",
+    "body": "Hello,\n\nOur billing portal returns HTTP 500 when we try to download invoices.\nThis is urgent because finance needs month-end invoices today.\n\nRegards,\nJordan\nCompany: Northwind Traders"
+  }
+  

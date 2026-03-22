@@ -27,6 +27,7 @@ data/
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
 
 # Logs
 *.log
@@ -34,3 +35,6 @@ logs/
 
 # Docker
 docker-compose.override.yml
+
+# Eval results (keep test_set and evaluate.py, not run artefacts)
+eval/results/
