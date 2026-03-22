@@ -189,8 +189,8 @@ class ExtractionService:
             confidence=0.0,
             extraction_notes=ai_output.extraction_notes,
         )
-        confidence_score = compute_confidence(partial_extraction)
-        return partial_extraction.model_copy(update={"confidence": confidence_score})
+        confidence_result = compute_confidence(partial_extraction)
+        return partial_extraction.model_copy(update={"confidence": confidence_result.score})
 
 
 def _hash_input(body: str) -> str:
