@@ -4,10 +4,14 @@ All runtime data access goes through this class. Schema is defined as a
 CREATE TABLE IF NOT EXISTS script so tests can initialise fresh databases
 without running Alembic migrations.
 
+WAL journal mode is enabled on init for concurrent-write safety under
+asyncio.gather-based batch processing.
+
 Tables:
   items        — processed email intake items
   audit_log    — immutable audit trail
   llm_call_log — per-request AI call telemetry
+  batch_jobs   — batch ingest job progress records
 """
 
 from __future__ import annotations
@@ -53,6 +57,17 @@ CREATE TABLE IF NOT EXISTS llm_call_log (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_items_message_id ON items(message_id);
 CREATE INDEX IF NOT EXISTS idx_audit_item_id ON audit_log(item_id);
+
+CREATE TABLE IF NOT EXISTS batch_jobs (
+  job_id TEXT PRIMARY KEY,
+  status TEXT NOT NULL,
+  total INTEGER NOT NULL,
+  processed INTEGER NOT NULL DEFAULT 0,
+  succeeded INTEGER NOT NULL DEFAULT 0,
+  failed_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 """
 
 
@@ -76,6 +91,7 @@ class Storage:
 
     def _init_db(self) -> None:
         with self._conn() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.executescript(SCHEMA)
 
     def get_by_message_id(self, message_id: str) -> dict[str, Any] | None:
@@ -217,6 +233,69 @@ class Storage:
                 (item_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def create_batch_job(self, job_id: str, total: int) -> None:
+        """Insert a new batch job record with status=running.
+
+        Args:
+            job_id: Unique batch job identifier.
+            total: Total number of emails in this batch.
+        """
+        created = now_utc_iso()
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO batch_jobs(job_id, status, total, processed, succeeded, failed_count, created_at, updated_at) VALUES(?,?,?,0,0,0,?,?)",
+                (job_id, "running", total, created, created),
+            )
+
+    def get_batch_job(self, job_id: str) -> dict[str, Any] | None:
+        """Return the batch job row, or None if not found.
+
+        Args:
+            job_id: Batch job identifier.
+
+        Returns:
+            Row as a dict, or None if not found.
+        """
+        with self._conn() as conn:
+            row = conn.execute("SELECT * FROM batch_jobs WHERE job_id = ?", (job_id,)).fetchone()
+            return dict(row) if row else None
+
+    def increment_batch_result(self, job_id: str, *, succeeded: bool) -> None:
+        """Atomically increment processed plus succeeded or failed_count.
+
+        Uses a single SQL UPDATE so concurrent callers cannot interleave a
+        read-then-write race condition.
+
+        Args:
+            job_id: Batch job to update.
+            succeeded: True increments succeeded; False increments failed_count.
+        """
+        updated = now_utc_iso()
+        with self._conn() as conn:
+            if succeeded:
+                conn.execute(
+                    "UPDATE batch_jobs SET processed = processed + 1, succeeded = succeeded + 1, updated_at = ? WHERE job_id = ?",
+                    (updated, job_id),
+                )
+            else:
+                conn.execute(
+                    "UPDATE batch_jobs SET processed = processed + 1, failed_count = failed_count + 1, updated_at = ? WHERE job_id = ?",
+                    (updated, job_id),
+                )
+
+    def finalize_batch_job(self, job_id: str) -> None:
+        """Mark a batch job as complete.
+
+        Args:
+            job_id: Batch job to finalise.
+        """
+        updated = now_utc_iso()
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE batch_jobs SET status = 'complete', updated_at = ? WHERE job_id = ?",
+                (updated, job_id),
+            )
 
     def list_all_audit_paginated(
         self, page: int, page_size: int

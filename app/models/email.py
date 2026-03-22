@@ -63,7 +63,9 @@ class Extraction(BaseModel):
     request_id: str = Field(description="Stable deterministic ID derived from message envelope")
     request_type: RequestType = Field(description="Classified request type")
     priority: Priority = Field(description="Inferred request priority")
-    due_date: str | None = Field(default=None, description="Requested due date in YYYY-MM-DD format")
+    due_date: str | None = Field(
+        default=None, description="Requested due date in YYYY-MM-DD format"
+    )
     company: str | None = Field(default=None, description="Requester organisation if identified")
     requester: Requester = Field(description="Requester identity from the email envelope")
     description: str = Field(description="Concise AI-generated summary of the request (≤300 chars)")
@@ -87,7 +89,9 @@ class AIExtractionOutput(BaseModel):
 
     request_type: RequestType = Field(description="Classified request type from AI")
     priority: Priority = Field(description="Inferred priority from AI")
-    due_date: str | None = Field(default=None, description="Due date extracted by AI, YYYY-MM-DD or null")
+    due_date: str | None = Field(
+        default=None, description="Due date extracted by AI, YYYY-MM-DD or null"
+    )
     company: str | None = Field(default=None, description="Company name extracted by AI, or null")
     description: str = Field(description="AI-generated summary of the request")
     line_items: list[LineItem] = Field(
@@ -106,7 +110,9 @@ class IngestResponse(BaseModel):
     item_id: str = Field(description="Unique item identifier assigned to this intake request")
     status: Status = Field(description="Initial routing status after processing")
     confidence: float = Field(ge=0.0, le=1.0, description="Extraction confidence score")
-    routed_to: str = Field(description="Routing destination: auto_approve, human_review, auto_reject, or idempotent_return")
+    routed_to: str = Field(
+        description="Routing destination: auto_approve, human_review, auto_reject, or idempotent_return"
+    )
 
 
 class ReviewAction(BaseModel):
@@ -114,7 +120,9 @@ class ReviewAction(BaseModel):
 
     reviewer: str = Field(description="Identifier of the reviewer (user ID or name)")
     action: Literal["approve", "reject"] = Field(description="Review decision: approve or reject")
-    reason: str | None = Field(default=None, description="Optional reviewer comments or justification")
+    reason: str | None = Field(
+        default=None, description="Optional reviewer comments or justification"
+    )
 
 
 class ReviewItem(BaseModel):

@@ -215,9 +215,7 @@ class AIClient(ABC):
     """Protocol for AI completion providers."""
 
     @abstractmethod
-    async def complete(
-        self, system: str, user: str, *, prompt_version: str = ""
-    ) -> AICallResult:
+    async def complete(self, system: str, user: str, *, prompt_version: str = "") -> AICallResult:
         """Send a prompt and return a structured result.
 
         Args:
@@ -244,9 +242,7 @@ class MockAIClient(AIClient):
         """
         self._fixed_response = response
 
-    async def complete(
-        self, system: str, user: str, *, prompt_version: str = ""
-    ) -> AICallResult:
+    async def complete(self, system: str, user: str, *, prompt_version: str = "") -> AICallResult:
         """Return a canned result matched to keywords in the user prompt.
 
         Args:
@@ -314,9 +310,7 @@ class AnthropicClient(AIClient):
         self._circuit_breaker = circuit_breaker
         self._max_daily_cost = max_daily_cost_usd
 
-    async def complete(
-        self, system: str, user: str, *, prompt_version: str = ""
-    ) -> AICallResult:
+    async def complete(self, system: str, user: str, *, prompt_version: str = "") -> AICallResult:
         """Call Claude with cost-limit check, circuit-breaker guard, and retry.
 
         Args:
@@ -361,9 +355,7 @@ class AnthropicClient(AIClient):
         )
         return ai_result
 
-    async def _raw_complete(
-        self, system: str, user: str, *, prompt_version: str
-    ) -> AICallResult:
+    async def _raw_complete(self, system: str, user: str, *, prompt_version: str) -> AICallResult:
         """Single raw API call with token counting and cost calculation.
 
         Args:

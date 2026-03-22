@@ -64,9 +64,7 @@ def route(
         decision = RoutingDecision(
             action="auto_approve",
             confidence=confidence,
-            reason=(
-                f"confidence {confidence} > auto_approve threshold {auto_approve_threshold}"
-            ),
+            reason=(f"confidence {confidence} > auto_approve threshold {auto_approve_threshold}"),
         )
     elif confidence >= auto_reject_threshold:
         decision = RoutingDecision(
@@ -81,9 +79,7 @@ def route(
         decision = RoutingDecision(
             action="auto_reject",
             confidence=confidence,
-            reason=(
-                f"confidence {confidence} < auto_reject threshold {auto_reject_threshold}"
-            ),
+            reason=(f"confidence {confidence} < auto_reject threshold {auto_reject_threshold}"),
         )
 
     logger.info(

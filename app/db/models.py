@@ -8,6 +8,7 @@ Tables:
   items         — processed email intake items (ReviewItem domain model)
   audit_log     — immutable audit trail for all state transitions
   llm_call_log  — per-request AI call telemetry (tokens, cost, latency)
+  batch_jobs    — batch ingest job progress records
 """
 
 from __future__ import annotations
@@ -73,3 +74,22 @@ class LlmCallLog(Base):
     cost_usd: Mapped[float] = mapped_column(Float, nullable=False)
     latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class BatchJobRecord(Base):
+    """Batch ingest job progress record.
+
+    Corresponds to the batch_jobs table and the BatchJob domain model.
+    Progress counters are updated atomically via SQL increments.
+    """
+
+    __tablename__ = "batch_jobs"
+
+    job_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    total: Mapped[int] = mapped_column(Integer, nullable=False)
+    processed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    succeeded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[str] = mapped_column(Text, nullable=False)

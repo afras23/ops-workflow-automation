@@ -291,13 +291,19 @@ def test_confidence_score_in_expected_range(
 def test_zero_notes_gives_highest_ai_confidence() -> None:
     no_notes = _extraction(extraction_notes=[])
     one_note = _extraction(extraction_notes=["ambiguous priority"])
-    assert compute_confidence(no_notes).ai_confidence_score > compute_confidence(one_note).ai_confidence_score
+    assert (
+        compute_confidence(no_notes).ai_confidence_score
+        > compute_confidence(one_note).ai_confidence_score
+    )
 
 
 def test_three_notes_gives_lowest_ai_confidence() -> None:
     three_notes = _extraction(extraction_notes=["a", "b", "c"])
     two_notes = _extraction(extraction_notes=["a", "b"])
-    assert compute_confidence(three_notes).ai_confidence_score < compute_confidence(two_notes).ai_confidence_score
+    assert (
+        compute_confidence(three_notes).ai_confidence_score
+        < compute_confidence(two_notes).ai_confidence_score
+    )
 
 
 # ---------------------------------------------------------------------------

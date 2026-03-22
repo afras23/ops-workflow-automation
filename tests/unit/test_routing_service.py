@@ -112,13 +112,13 @@ def test_routing_decision_is_immutable() -> None:
 @pytest.mark.parametrize(
     "confidence,expected_action",
     [
-        (0.95, "auto_approve"),   # well above threshold
-        (0.86, "auto_approve"),   # just above threshold (0.85 < 0.86)
-        (0.85, "human_review"),   # exactly at threshold → review (not above)
-        (0.70, "human_review"),   # midband
-        (0.50, "human_review"),   # exactly at reject threshold → review (not below)
-        (0.499, "auto_reject"),   # just below reject threshold
-        (0.10, "auto_reject"),    # well below
+        (0.95, "auto_approve"),  # well above threshold
+        (0.86, "auto_approve"),  # just above threshold (0.85 < 0.86)
+        (0.85, "human_review"),  # exactly at threshold → review (not above)
+        (0.70, "human_review"),  # midband
+        (0.50, "human_review"),  # exactly at reject threshold → review (not below)
+        (0.499, "auto_reject"),  # just below reject threshold
+        (0.10, "auto_reject"),  # well below
     ],
     ids=[
         "well_above_approve",
@@ -139,10 +139,10 @@ def test_routing_action_for_confidence(confidence: float, expected_action: str) 
     "confidence,approve_t,reject_t,expected_action",
     [
         (0.80, 0.75, 0.50, "auto_approve"),  # custom approve threshold
-        (0.60, 0.75, 0.65, "auto_reject"),   # custom reject threshold
+        (0.60, 0.75, 0.65, "auto_reject"),  # custom reject threshold
         (0.70, 0.75, 0.65, "human_review"),  # within custom band
         (1.00, 0.90, 0.50, "auto_approve"),  # perfect score
-        (0.00, 0.85, 0.50, "auto_reject"),   # zero score
+        (0.00, 0.85, 0.50, "auto_reject"),  # zero score
     ],
     ids=[
         "custom_approve_threshold",

@@ -25,6 +25,7 @@ from app.config import get_settings
 from app.core.exceptions import BaseAppError
 from app.core.logging_config import configure_logging, correlation_id_ctx
 from app.services.ai.client import CircuitBreaker, DailyCostTracker, get_ai_client
+from app.services.batch_service import BatchService
 from app.services.extraction_service import ExtractionService
 from app.services.review_service import ReviewService
 from app.services.workflow_service import WorkflowService
@@ -61,6 +62,10 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     application.state.review_service = ReviewService(
         storage=storage,
         settings=settings,
+    )
+    application.state.batch_service = BatchService(
+        storage=storage,
+        workflow_service=application.state.workflow_service,
     )
 
     logger.info(
