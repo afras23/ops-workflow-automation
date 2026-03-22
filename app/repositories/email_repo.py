@@ -85,6 +85,21 @@ class EmailRepository:
         )
         logger.debug("Item created", extra={"item_id": item_id, "status": status})
 
+    def list_items_paginated(
+        self, page: int, page_size: int, *, status: str | None = None
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Return a page of items and the total matching count.
+
+        Args:
+            page: 1-based page number.
+            page_size: Maximum items to return per page.
+            status: Optional status filter.
+
+        Returns:
+            Tuple of (item dicts for this page, total matching count).
+        """
+        return self._storage.list_items_paginated(page, page_size, status=status)
+
     def update_status(self, item_id: str, status: str) -> None:
         """Update the routing status of an existing item.
 

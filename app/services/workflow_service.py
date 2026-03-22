@@ -237,6 +237,31 @@ class WorkflowService:
             entry["details"] = json.loads(entry.pop("details_json"))
         return audit_logs
 
+    def get_all_audit_paginated(self, page: int, page_size: int) -> dict[str, Any]:
+        """Return a paginated audit log across all items.
+
+        Args:
+            page: 1-based page number.
+            page_size: Maximum events per page.
+
+        Returns:
+            Dict with events list, total count, page, and page_size.
+        """
+        import json
+
+        raw_rows, total = self._storage.list_all_audit_paginated(page, page_size)
+        audit_events = []
+        for row in raw_rows:
+            entry = dict(row)
+            entry["details"] = json.loads(entry.pop("details_json"))
+            audit_events.append(entry)
+        return {
+            "events": audit_events,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+
     def item_counts(self) -> dict[str, int]:
         """Return status-keyed item counts for the /metrics endpoint.
 

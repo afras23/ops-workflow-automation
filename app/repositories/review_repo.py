@@ -33,6 +33,20 @@ class ReviewRepository:
         """
         return self._email_repo.list_items(status="pending_review")
 
+    def list_pending_paginated(
+        self, page: int, page_size: int
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Return a page of pending_review items with total count.
+
+        Args:
+            page: 1-based page number.
+            page_size: Maximum items per page.
+
+        Returns:
+            Tuple of (item dicts for this page, total pending count).
+        """
+        return self._email_repo.list_items_paginated(page, page_size, status="pending_review")
+
     def get_reviewable_item(self, item_id: str) -> dict[str, Any] | None:
         """Return an item only if it exists and is in pending_review status.
 

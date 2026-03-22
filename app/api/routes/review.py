@@ -21,6 +21,62 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["review"])
 
 
+@router.get("/review")
+def list_pending_review(
+    request: Request,
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+) -> dict[str, Any]:
+    """List items currently awaiting human review, paginated.
+
+    Args:
+        request: FastAPI request.
+        page: 1-based page number.
+        page_size: Maximum items per page (1–100).
+
+    Returns:
+        Dict with items, total, page, and page_size.
+    """
+    review_service = request.app.state.review_service
+    return review_service.get_pending_items(page=page, page_size=page_size)
+
+
+@router.post("/review/{item_id}")
+async def submit_review(
+    item_id: str,
+    action: ReviewAction,
+    request: Request,
+) -> JSONResponse:
+    """Submit a human review decision for a pending item.
+
+    Args:
+        item_id: The item to approve or reject.
+        action: Decision containing reviewer, action, and optional reason.
+        request: FastAPI request.
+
+    Returns:
+        JSON response with ok=True and the resulting status.
+
+    Raises:
+        HTTPException 404: If the item does not exist.
+        HTTPException 400: If the item is not in pending_review status.
+    """
+    workflow_service = request.app.state.workflow_service
+    review_service = request.app.state.review_service
+
+    stored_item = workflow_service.get_item(item_id)
+    if not stored_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    if stored_item["status"] != "pending_review":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Item not reviewable (current status: {stored_item['status']})",
+        )
+
+    decision_result = await review_service.handle_review(item_id, action)
+    return JSONResponse(decision_result)
+
+
 @router.get("/items")
 def list_items(
     request: Request,

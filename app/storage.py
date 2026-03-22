@@ -1,3 +1,17 @@
+"""Raw SQLite storage layer.
+
+All runtime data access goes through this class. Schema is defined as a
+CREATE TABLE IF NOT EXISTS script so tests can initialise fresh databases
+without running Alembic migrations.
+
+Tables:
+  items        — processed email intake items
+  audit_log    — immutable audit trail
+  llm_call_log — per-request AI call telemetry
+"""
+
+from __future__ import annotations
+
 import json
 import os
 import sqlite3
@@ -25,13 +39,32 @@ CREATE TABLE IF NOT EXISTS audit_log (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS llm_call_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id TEXT,
+  model TEXT NOT NULL,
+  prompt_version TEXT NOT NULL,
+  tokens_in INTEGER NOT NULL,
+  tokens_out INTEGER NOT NULL,
+  cost_usd REAL NOT NULL,
+  latency_ms REAL NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_items_message_id ON items(message_id);
 CREATE INDEX IF NOT EXISTS idx_audit_item_id ON audit_log(item_id);
 """
 
 
 class Storage:
+    """SQLite-backed storage for items, audit events, and LLM call logs."""
+
     def __init__(self, path: str) -> None:
+        """Initialise storage and ensure schema exists.
+
+        Args:
+            path: Filesystem path for the SQLite database file.
+        """
         os.makedirs(os.path.dirname(path), exist_ok=True)
         self.path = path
         self._init_db()
@@ -46,16 +79,40 @@ class Storage:
             conn.executescript(SCHEMA)
 
     def get_by_message_id(self, message_id: str) -> dict[str, Any] | None:
+        """Return the item row matching message_id, or None.
+
+        Args:
+            message_id: Source email message identifier.
+
+        Returns:
+            Row as a dict, or None if not found.
+        """
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM items WHERE message_id = ?", (message_id,)).fetchone()
             return dict(row) if row else None
 
     def get_item(self, item_id: str) -> dict[str, Any] | None:
+        """Return the item row matching item_id, or None.
+
+        Args:
+            item_id: Unique item identifier.
+
+        Returns:
+            Row as a dict, or None if not found.
+        """
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM items WHERE item_id = ?", (item_id,)).fetchone()
             return dict(row) if row else None
 
     def list_items(self, status: str | None = None) -> list[dict[str, Any]]:
+        """Return all items, optionally filtered by status.
+
+        Args:
+            status: Optional status filter (e.g. 'pending_review').
+
+        Returns:
+            List of item rows as dicts, ordered by created_at descending.
+        """
         with self._conn() as conn:
             if status:
                 rows = conn.execute(
@@ -65,9 +122,49 @@ class Storage:
                 rows = conn.execute("SELECT * FROM items ORDER BY created_at DESC").fetchall()
             return [dict(r) for r in rows]
 
+    def list_items_paginated(
+        self, page: int, page_size: int, status: str | None = None
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Return a page of items and the total count.
+
+        Args:
+            page: 1-based page number.
+            page_size: Number of items per page.
+            status: Optional status filter.
+
+        Returns:
+            Tuple of (page rows as dicts, total matching row count).
+        """
+        offset = (page - 1) * page_size
+        with self._conn() as conn:
+            if status:
+                total = conn.execute(
+                    "SELECT COUNT(*) FROM items WHERE status = ?", (status,)
+                ).fetchone()[0]
+                rows = conn.execute(
+                    "SELECT * FROM items WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (status, page_size, offset),
+                ).fetchall()
+            else:
+                total = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+                rows = conn.execute(
+                    "SELECT * FROM items ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (page_size, offset),
+                ).fetchall()
+            return [dict(r) for r in rows], total
+
     def create_item(
         self, item_id: str, message_id: str, status: str, confidence: float, extraction: dict
     ) -> None:
+        """Insert a new item row.
+
+        Args:
+            item_id: Unique item identifier.
+            message_id: Source email message identifier.
+            status: Initial routing status.
+            confidence: Extraction confidence score.
+            extraction: Full extraction dict (serialised to JSON).
+        """
         created = now_utc_iso()
         with self._conn() as conn:
             conn.execute(
@@ -76,6 +173,12 @@ class Storage:
             )
 
     def update_status(self, item_id: str, status: str) -> None:
+        """Update the status of an existing item.
+
+        Args:
+            item_id: Unique item identifier.
+            status: New status value.
+        """
         updated = now_utc_iso()
         with self._conn() as conn:
             conn.execute(
@@ -84,6 +187,14 @@ class Storage:
             )
 
     def write_audit(self, item_id: str, event_type: str, actor: str, details: dict) -> None:
+        """Append an audit event for an item.
+
+        Args:
+            item_id: Item the event belongs to.
+            event_type: Category of the event (e.g. 'approved', 'ingested').
+            actor: Who or what triggered the event (user ID or 'system').
+            details: Arbitrary event payload (serialised to JSON).
+        """
         created = now_utc_iso()
         with self._conn() as conn:
             conn.execute(
@@ -92,9 +203,38 @@ class Storage:
             )
 
     def list_audit(self, item_id: str) -> list[dict[str, Any]]:
+        """Return all audit events for a specific item.
+
+        Args:
+            item_id: Item to retrieve audit events for.
+
+        Returns:
+            List of audit rows ordered by id ascending.
+        """
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT id, item_id, event_type, actor, details_json, created_at FROM audit_log WHERE item_id = ? ORDER BY id ASC",
                 (item_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def list_all_audit_paginated(
+        self, page: int, page_size: int
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Return a page of audit events across all items with total count.
+
+        Args:
+            page: 1-based page number.
+            page_size: Number of events per page.
+
+        Returns:
+            Tuple of (page rows as dicts, total event count).
+        """
+        offset = (page - 1) * page_size
+        with self._conn() as conn:
+            total = conn.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+            rows = conn.execute(
+                "SELECT id, item_id, event_type, actor, details_json, created_at FROM audit_log ORDER BY id ASC LIMIT ? OFFSET ?",
+                (page_size, offset),
+            ).fetchall()
+            return [dict(r) for r in rows], total

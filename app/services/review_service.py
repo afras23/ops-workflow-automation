@@ -20,7 +20,9 @@ from app.core.constants import (
 )
 from app.integrations.crm_client import append_airtable_row, append_sheet_row
 from app.integrations.slack_client import send_slack_summary
-from app.models.email import ReviewAction
+from app.models.email import ReviewAction, ReviewItem
+from app.repositories.email_repo import EmailRepository
+from app.repositories.review_repo import ReviewRepository
 from app.storage import Storage
 from app.utils import redact_pii
 
@@ -39,6 +41,37 @@ class ReviewService:
         """
         self._storage = storage
         self._settings = settings
+        self._review_repo = ReviewRepository(email_repo=EmailRepository(storage))
+
+    def get_pending_items(self, page: int, page_size: int) -> dict[str, Any]:
+        """Return a paginated list of items awaiting human review.
+
+        Args:
+            page: 1-based page number.
+            page_size: Maximum items per page.
+
+        Returns:
+            Dict with items list, total count, page, and page_size.
+        """
+        raw_rows, total = self._review_repo.list_pending_paginated(page, page_size)
+        review_items = [
+            ReviewItem(
+                item_id=row["item_id"],
+                message_id=row["message_id"],
+                status=row["status"],
+                confidence=row["confidence"],
+                extraction=json.loads(row["extraction_json"]),
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            ).model_dump()
+            for row in raw_rows
+        ]
+        return {
+            "items": review_items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
 
     async def handle_review(self, item_id: str, action: ReviewAction) -> dict[str, Any]:
         """Apply a human review decision to a pending item.

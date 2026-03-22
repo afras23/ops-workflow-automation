@@ -42,6 +42,20 @@ class AuditRepository:
         """
         self._storage.write_audit(item_id, event_type, actor, details)
 
+    def list_all_events_paginated(
+        self, page: int, page_size: int
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Return a page of audit events across all items.
+
+        Args:
+            page: 1-based page number.
+            page_size: Maximum events per page.
+
+        Returns:
+            Tuple of (audit event dicts for this page, total event count).
+        """
+        return self._storage.list_all_audit_paginated(page, page_size)
+
     def list_events(self, item_id: str) -> list[dict[str, Any]]:
         """Return all audit events for an item ordered by creation time.
 

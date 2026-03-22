@@ -9,11 +9,31 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["audit"])
+
+
+@router.get("/audit")
+def list_all_audit(
+    request: Request,
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Events per page"),
+) -> dict[str, Any]:
+    """List all audit events across all items, paginated.
+
+    Args:
+        request: FastAPI request.
+        page: 1-based page number.
+        page_size: Maximum events per page (1–100).
+
+    Returns:
+        Dict with events, total, page, and page_size.
+    """
+    workflow_service = request.app.state.workflow_service
+    return workflow_service.get_all_audit_paginated(page=page, page_size=page_size)
 
 
 @router.get("/items/{item_id}/audit")
