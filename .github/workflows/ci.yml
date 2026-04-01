@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ops
-          POSTGRES_PASSWORD: ops
-          POSTGRES_DB: ops_test
+          POSTGRES_USER: appuser
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: opsworkflow
         ports:
           - 5432:5432
         options: >-
@@ -57,5 +57,5 @@ jobs:
         env:
           CONFIDENCE_THRESHOLD: "0.78"
           SLACK_WEBHOOK_URL: ""
-          DATABASE_URL: postgresql://ops:ops@localhost:5432/ops_test
+          DATABASE_URL: DATABASE_URL=postgresql://appuser:changeme@localhost:5432/opsworkflow
         run: pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
