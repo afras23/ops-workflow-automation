@@ -80,6 +80,49 @@ flowchart TB
     A --> L
 ```
 
+## API Response Format
+
+All API endpoints return a consistent, envelope-style JSON structure.
+
+**Success response**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "item": {
+      "id": "req_123",
+      "request_type": "purchase_request",
+      "priority": "medium",
+      "confidence": 0.87
+    }
+  },
+  "metadata": {
+    "correlation_id": "7f9c5f9a-4f1e-4f92-8f4a-1a4b3c2d5e6f",
+    "timestamp": "2026-03-31T12:34:56Z"
+  }
+}
+```
+
+**Error response**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "error_code": "validation_error",
+    "message": "subject must not be empty",
+    "context": {
+      "field": "subject"
+    }
+  },
+  "metadata": {
+    "correlation_id": "7f9c5f9a-4f1e-4f92-8f4a-1a4b3c2d5e6f",
+    "timestamp": "2026-03-31T12:35:01Z"
+  }
+}
+```
+
 ---
 
 ## Evaluation Results

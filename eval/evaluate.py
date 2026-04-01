@@ -32,6 +32,7 @@ from app.models.email import Extraction, InboxMessage  # noqa: E402
 from app.services.ai.client import DailyCostTracker, get_ai_client  # noqa: E402
 from app.services.ai.prompts import VERSION as PROMPT_VERSION  # noqa: E402
 from app.services.extraction_service import ExtractionService  # noqa: E402
+from eval.metrics import exact_match_accuracy, field_level_accuracy  # noqa: E402
 
 EVAL_DIR = Path(__file__).parent
 RESULTS_DIR = EVAL_DIR / "results"
@@ -203,9 +204,7 @@ async def _run_case(
 
 
 def _compute_field_accuracy(results: list[dict[str, Any]]) -> dict[str, float]:
-    """Compute per-field accuracy across all results.
-
-    Only counts cases where the field was specified in expected.
+    """Compatibility wrapper delegating to field_level_accuracy.
 
     Args:
         results: List of case result dicts.
@@ -213,18 +212,7 @@ def _compute_field_accuracy(results: list[dict[str, Any]]) -> dict[str, float]:
     Returns:
         Dict of field_name → accuracy fraction in [0.0, 1.0].
     """
-    totals: dict[str, int] = {}
-    matches: dict[str, int] = {}
-    for result in results:
-        for field, matched in result.get("field_matches", {}).items():
-            totals[field] = totals.get(field, 0) + 1
-            if matched:
-                matches[field] = matches.get(field, 0) + 1
-    return {
-        field: round(matches.get(field, 0) / total, 4)
-        for field, total in totals.items()
-        if total > 0
-    }
+    return field_level_accuracy(results)
 
 
 def _build_report(
@@ -247,10 +235,8 @@ def _build_report(
     confidences = [r["confidence"] for r in results]
     latencies = [r["latency_ms"] for r in results]
     costs = [r["cost_usd"] for r in results]
-    field_accuracy = _compute_field_accuracy(results)
-    overall_accuracy = (
-        round(sum(field_accuracy.values()) / len(field_accuracy), 4) if field_accuracy else 0.0
-    )
+    field_accuracy = field_level_accuracy(results)
+    overall_accuracy = exact_match_accuracy(field_accuracy.values()) if field_accuracy else 0.0
     return {
         "timestamp": datetime.now(UTC).isoformat(),
         "model": model,
@@ -294,7 +280,7 @@ def _summarise_by_category(results: list[dict[str, Any]]) -> dict[str, dict[str,
 
 
 def _write_report(report: dict[str, Any]) -> Path:
-    """Write the report JSON to eval/results/eval_YYYY-MM-DD.json.
+    """Write the report JSON to eval/results/eval_<timestamp>.json.
 
     Args:
         report: Completed report dict.
@@ -303,8 +289,8 @@ def _write_report(report: dict[str, Any]) -> Path:
         Path to the written file.
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    date_tag = datetime.now(UTC).strftime("%Y-%m-%d")
-    output_path = RESULTS_DIR / f"eval_{date_tag}.json"
+    timestamp_tag = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%S")
+    output_path = RESULTS_DIR / f"eval_{timestamp_tag}.json"
     output_path.write_text(json.dumps(report, indent=2))
     return output_path
 

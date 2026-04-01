@@ -39,10 +39,10 @@ jobs:
           pip install -r requirements-dev.txt
           pip install psycopg2-binary
 
-      - name: Lint
+      - name: Lint (ruff)
         run: ruff check app/ tests/
 
-      - name: Format check
+      - name: Format check (ruff)
         run: ruff format --check app/ tests/
 
       - name: Type check
@@ -53,8 +53,9 @@ jobs:
           DATABASE_URL: postgresql://ops:ops@localhost:5432/ops_test
         run: alembic upgrade head
 
-      - name: Test
+      - name: Test (pytest)
         env:
           CONFIDENCE_THRESHOLD: "0.78"
           SLACK_WEBHOOK_URL: ""
+          DATABASE_URL: postgresql://ops:ops@localhost:5432/ops_test
         run: pytest tests/ -v --tb=short --cov=app --cov-report=term-missing

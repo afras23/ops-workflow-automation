@@ -10,6 +10,8 @@ build/
 
 # Runtime data
 data/
+scratch/
+tmp/
 
 # Env + secrets
 .env
@@ -38,3 +40,9 @@ docker-compose.override.yml
 
 # Eval results (keep test_set and evaluate.py, not run artefacts)
 eval/results/
+
+# Local AI assistant scratch files
+CLAUDE.md
+claude*
+afras23claude*
+*_ai.md
