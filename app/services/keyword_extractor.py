@@ -21,6 +21,9 @@ from app.utils import normalize_whitespace, stable_id
 
 logger = logging.getLogger(__name__)
 
+_BASE_DIR = Path(__file__).resolve().parents[2]
+_DEFAULT_SCHEMA_PATH = _BASE_DIR / "schemas" / "extraction_schema.json"
+
 _PRIORITY_HINTS: dict[str, str] = {
     "urgent": "urgent",
     "asap": "urgent",
@@ -50,16 +53,28 @@ _DUE_RE = re.compile(
 _LINE_ITEM_RE = re.compile(r"\bItem:\s*(.+?),\s*Qty:\s*(\d+)\b", re.IGNORECASE)
 
 
-def load_schema_validator(schema_path: str) -> Draft202012Validator:
+def load_schema_validator(schema_path: str | Path | None) -> Draft202012Validator:
     """Load a JSON Schema Draft 2020-12 validator from a file.
 
     Args:
-        schema_path: Path to the JSON schema file.
+        schema_path: Optional path to the JSON schema file. If a relative
+            path is provided, it is resolved from the project root. If
+            None, the default extraction schema path is used.
 
     Returns:
         Configured Draft202012Validator instance.
     """
-    schema = json.loads(Path(schema_path).read_text(encoding="utf-8"))
+    if schema_path is None:
+        resolved_path = _DEFAULT_SCHEMA_PATH
+    else:
+        candidate_path = Path(schema_path)
+        resolved_path = (
+            candidate_path
+            if candidate_path.is_absolute()
+            else _BASE_DIR / candidate_path
+        )
+
+    schema = json.loads(resolved_path.read_text(encoding="utf-8"))
     return Draft202012Validator(schema)
 
 
