@@ -62,9 +62,7 @@ def test_same_email_multiple_times_stores_exactly_one_item(client: TestClient) -
     items_response = client.get("/api/v1/items")
     assert items_response.status_code == 200
     item_ids_for_message = [
-        item["item_id"]
-        for item in items_response.json()
-        if item["message_id"] == "idemp_msg_multi"
+        item["item_id"] for item in items_response.json() if item["message_id"] == "idemp_msg_multi"
     ]
     assert len(item_ids_for_message) == 1
 
