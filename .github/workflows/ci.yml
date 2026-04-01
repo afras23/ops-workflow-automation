@@ -50,12 +50,12 @@ jobs:
 
       - name: Run migrations against Postgres
         env:
-          DATABASE_URL: postgresql://ops:ops@localhost:5432/ops_test
+          DATABASE_URL: postgresql://appuser:changeme@localhost:5432/opsworkflow
         run: alembic upgrade head
 
       - name: Test (pytest)
         env:
           CONFIDENCE_THRESHOLD: "0.78"
           SLACK_WEBHOOK_URL: ""
-          DATABASE_URL: DATABASE_URL=postgresql://appuser:changeme@localhost:5432/opsworkflow
+          DATABASE_URL: postgresql://appuser:changeme@localhost:5432/opsworkflow
         run: pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
