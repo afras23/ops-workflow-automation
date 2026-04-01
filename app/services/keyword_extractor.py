@@ -69,9 +69,7 @@ def load_schema_validator(schema_path: str | Path | None) -> Draft202012Validato
     else:
         candidate_path = Path(schema_path)
         resolved_path = (
-            candidate_path
-            if candidate_path.is_absolute()
-            else _BASE_DIR / candidate_path
+            candidate_path if candidate_path.is_absolute() else _BASE_DIR / candidate_path
         )
 
     schema = json.loads(resolved_path.read_text(encoding="utf-8"))
