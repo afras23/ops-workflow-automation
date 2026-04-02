@@ -305,3 +305,6 @@ tests/
   fixtures/         — sample inputs and expected outputs
 migrations/         — Alembic migration scripts
 ```
+
+Built by Anesah Fraser
+https://www.prozeolis.co.uk
